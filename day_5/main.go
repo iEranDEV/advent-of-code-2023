@@ -75,10 +75,17 @@ type numbersRange struct {
 	end   int
 }
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 type operation struct {
-	destionation int
-	source       int
-	amount       int
+	destination numbersRange
+	source      numbersRange
+	amount      int
 }
 
 // Part 2
@@ -90,13 +97,6 @@ func part2() {
 	}
 	splitContent := strings.Split(content, "\n")
 	seedText := strings.Split(strings.ReplaceAll(splitContent[0], "seeds: ", ""), " ")
-
-	ranges := [][]numbersRange{{}}
-	for i := 0; i < len(seedText); i += 2 {
-		start, _ := strconv.Atoi(seedText[i])
-		end, _ := strconv.Atoi(seedText[i+1])
-		ranges[0] = append(ranges[0], numbersRange{start: start, end: start + end - 1})
-	}
 
 	operations := [][]operation{}
 	index := -1
@@ -117,49 +117,72 @@ func part2() {
 					data = append(data, number)
 				}
 			}
-			operations[index] = append(operations[index], operation{destionation: data[0], source: data[1], amount: data[2]})
+			operations[index] = append(operations[index], operation{destination: numbersRange{data[0], data[0] + data[2] - 1}, source: numbersRange{data[1], data[1] + data[2] - 1}, amount: data[2]})
 		}
 	}
-	for _, i := range operations {
-		fmt.Println(i)
+
+	ranges := [][]numbersRange{}
+	for i := 0; i < len(seedText); i += 2 {
+		start, _ := strconv.Atoi(seedText[i])
+		end, _ := strconv.Atoi(seedText[i+1])
+		ranges = append(ranges, []numbersRange{})
+		ranges[0] = append(ranges[0], numbersRange{start: start, end: start + end - 1})
 	}
-	/*
-		rangeToSwap := numbersRange{data[1], data[1] + data[2] - 1}
-				newRange := numbersRange{data[0], data[0] + data[2] - 1}
-				temp := []numbersRange{}
-				for _, value := range ranges[index] {
-					replace := []numbersRange{}
-					if rangeToSwap.start >= value.start {
-						replace = append(replace, numbersRange{start: newRange.start, end: newRange.end})
 
-						if rangeToSwap.start != value.start {
-							replace = append(replace, numbersRange{start: value.start, end: rangeToSwap.start - 1})
-						}
+	index = 0
+	for _, operationsList := range operations {
+		temp := []numbersRange{}
+		for _, operation := range operationsList {
+			for _, value := range ranges[index] {
+				replace := []numbersRange{}
 
-						if rangeToSwap.end != value.end {
-							replace = append(replace, numbersRange{rangeToSwap.end + 1, value.end})
+				if operation.source.start >= value.start && operation.source.end <= value.end {
+					// NEW SEGMENT IS FULL IN OLD ONE
+
+					if operation.source.start != value.start {
+						if operation.source.end != value.end {
+							replace = append(replace, numbersRange{value.start, operation.source.start - 1})
+							replace = append(replace, numbersRange{operation.destination.start, operation.destination.end})
+							replace = append(replace, numbersRange{operation.source.end + 1, value.end})
+						} else {
+							replace = append(replace, numbersRange{value.start, operation.source.start - 1})
+							replace = append(replace, numbersRange{operation.destination.start, operation.destination.end})
 						}
-					}
-					if len(replace) >= 1 {
-						temp = append(temp, replace...)
 					} else {
-						temp = append(temp, value)
+						if operation.source.end != value.end {
+							replace = append(replace, numbersRange{operation.destination.start, operation.destination.end})
+							replace = append(replace, numbersRange{operation.source.end + 1, value.end})
+						} else {
+							replace = append(replace, numbersRange{operation.destination.start, operation.destination.end})
+						}
 					}
+				} else if operation.source.start >= value.start && operation.source.end > value.end {
+					// NEW SEGMENT IS INSIDE FROM LEFT AND OUTSIDE FROM RIGHT
+
+				} else if operation.source.start < value.start && operation.source.end <= value.end {
+					// NEW SEGMENT IS INSIDE FROM RIGHT AND OUTSIDE FROM LEFT
+
+				} else if operation.source.start < value.start && operation.source.end > value.end {
+					// NEW SEGMENT IS FULLY OUTSIDE
+
+					replace = append(replace, numbersRange{value.start + operation.amount, value.end + operation.amount})
 				}
-				fmt.Println("temp", temp)
-	*/
-	// for _, val := range ranges {
-	// 	fmt.Println(val)
-	// }
-	// minLocation := seedsData[0][len(seedsData[0])-1]
-	// for _, seed := range seedsData {
-	// 	if seed[len(seed)-1] < minLocation {
-	// 		minLocation = seed[len(seed)-1]
-	// 	}
-	// }
-	// fmt.Println("Part 1:", minLocation)
+
+				if len(replace) >= 1 {
+					temp = append(temp, replace...)
+				} else {
+					temp = append(temp, value)
+				}
+			}
+		}
+		if len(ranges)-1 <= index {
+			ranges = append(ranges, []numbersRange{})
+		}
+		ranges[index+1] = append(ranges[index+1], temp...)
+		index++
+	}
 }
 
 func main() {
-	part1()
+	part2()
 }
