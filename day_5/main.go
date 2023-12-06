@@ -75,11 +75,8 @@ type numbersRange struct {
 	end   int
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
+func RemoveIndex(s []numbersRange, index int) []numbersRange {
+	return append(s[:index], s[index+1:]...)
 }
 
 type operation struct {
@@ -121,21 +118,20 @@ func part2() {
 		}
 	}
 
-	ranges := [][]numbersRange{}
+	ranges := []numbersRange{}
 	for i := 0; i < len(seedText); i += 2 {
 		start, _ := strconv.Atoi(seedText[i])
 		end, _ := strconv.Atoi(seedText[i+1])
-		ranges = append(ranges, []numbersRange{})
-		ranges[0] = append(ranges[0], numbersRange{start: start, end: start + end - 1})
+		ranges = append(ranges, numbersRange{start: start, end: start + end - 1})
 	}
 
-	index = 0
+	// For each mapping
 	for _, operationsList := range operations {
 		temp := []numbersRange{}
-		for _, operation := range operationsList {
-			for _, value := range ranges[index] {
-				replace := []numbersRange{}
+		for _, value := range ranges {
+			replace := []numbersRange{}
 
+			for _, operation := range operationsList {
 				if operation.source.start >= value.start && operation.source.end <= value.end {
 					// NEW SEGMENT IS FULL IN OLD ONE
 
@@ -156,31 +152,61 @@ func part2() {
 							replace = append(replace, numbersRange{operation.destination.start, operation.destination.end})
 						}
 					}
-				} else if operation.source.start >= value.start && operation.source.end > value.end {
+				} else if operation.source.start >= value.start && operation.source.end > value.end && operation.source.start <= value.end {
 					// NEW SEGMENT IS INSIDE FROM LEFT AND OUTSIDE FROM RIGHT
 
-				} else if operation.source.start < value.start && operation.source.end <= value.end {
+					diff := operation.destination.start - operation.source.start
+					if operation.source.start == value.end {
+						replace = append(replace, numbersRange{value.start, value.end - 1})
+						replace = append(replace, numbersRange{value.end + diff, value.end + diff})
+					} else {
+						if operation.source.start == value.start {
+							replace = append(replace, numbersRange{value.start + diff, value.end + diff})
+						} else {
+							replace = append(replace, numbersRange{value.start, operation.source.start - 1})
+							replace = append(replace, numbersRange{operation.destination.start, value.end + diff})
+						}
+
+					}
+
+				} else if operation.source.start < value.start && operation.source.end <= value.end && operation.source.end >= value.start {
 					// NEW SEGMENT IS INSIDE FROM RIGHT AND OUTSIDE FROM LEFT
+
+					diff := operation.destination.start - operation.source.start
+					if operation.source.end == value.start {
+						replace = append(replace, numbersRange{value.start + diff, value.start + diff})
+						replace = append(replace, numbersRange{value.start + 1, value.end})
+					} else {
+						if operation.source.end == value.end {
+							replace = append(replace, numbersRange{value.start + diff, value.end + diff})
+						} else {
+							replace = append(replace, numbersRange{value.start + diff, operation.destination.end})
+							replace = append(replace, numbersRange{operation.source.end + 1, value.end})
+						}
+					}
 
 				} else if operation.source.start < value.start && operation.source.end > value.end {
 					// NEW SEGMENT IS FULLY OUTSIDE
 
-					replace = append(replace, numbersRange{value.start + operation.amount, value.end + operation.amount})
-				}
-
-				if len(replace) >= 1 {
-					temp = append(temp, replace...)
-				} else {
-					temp = append(temp, value)
+					diff := operation.destination.start - operation.source.start
+					replace = append(replace, numbersRange{value.start + diff, value.end + diff})
 				}
 			}
+			if len(replace) >= 1 {
+				temp = append(temp, replace...)
+			} else {
+				temp = append(temp, value)
+			}
 		}
-		if len(ranges)-1 <= index {
-			ranges = append(ranges, []numbersRange{})
-		}
-		ranges[index+1] = append(ranges[index+1], temp...)
-		index++
+		ranges = append([]numbersRange{}, temp...)
 	}
+	min := ranges[len(ranges)-1].start
+	for _, value := range ranges {
+		if value.start < min {
+			min = value.start
+		}
+	}
+	fmt.Println("Part 2:", min)
 }
 
 func main() {
