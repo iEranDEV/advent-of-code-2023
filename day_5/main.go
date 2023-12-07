@@ -157,7 +157,9 @@ func part2() {
 
 					diff := operation.destination.start - operation.source.start
 					if operation.source.start == value.end {
-						replace = append(replace, numbersRange{value.start, value.end - 1})
+						if value.start < value.end-1 {
+							replace = append(replace, numbersRange{value.start, value.end - 1})
+						}
 						replace = append(replace, numbersRange{value.end + diff, value.end + diff})
 					} else {
 						if operation.source.start == value.start {
@@ -175,7 +177,9 @@ func part2() {
 					diff := operation.destination.start - operation.source.start
 					if operation.source.end == value.start {
 						replace = append(replace, numbersRange{value.start + diff, value.start + diff})
-						replace = append(replace, numbersRange{value.start + 1, value.end})
+						if value.end > value.start+1 {
+							replace = append(replace, numbersRange{value.start + 1, value.end})
+						}
 					} else {
 						if operation.source.end == value.end {
 							replace = append(replace, numbersRange{value.start + diff, value.end + diff})
@@ -198,12 +202,16 @@ func part2() {
 				temp = append(temp, value)
 			}
 		}
+		fmt.Println(temp)
 		ranges = append([]numbersRange{}, temp...)
 	}
 	min := ranges[len(ranges)-1].start
 	for _, value := range ranges {
 		if value.start < min {
 			min = value.start
+		}
+		if value.start == 0 {
+			fmt.Println(value)
 		}
 	}
 	fmt.Println("Part 2:", min)
